@@ -93,11 +93,11 @@ export default function App() {
     if (!supabase) return
     if (!session) { setTasks([]); setTasksReady(authReady); return }
     let active = true
-    supabase.from('tasks').select('id,title,description,status,created_at').order('created_at', { ascending: false })
+    supabase.from('tarea').select('id,titulo,descripcion,estado,created_at').order('created_at', { ascending: false })
       .then(({ data, error: queryError }) => {
         if (!active) return
         if (queryError) setError(queryError.message)
-        else setTasks((data ?? []).map(row => ({ id: row.id, title: row.title, description: row.description ?? '', status: row.status as TaskStatus, createdAt: row.created_at })))
+        else setTasks((data ?? []).map(row => ({ id: String(row.id), title: row.titulo, description: row.descripcion ?? '', status: row.estado as TaskStatus, createdAt: row.created_at })))
         setTasksReady(true)
       })
     return () => { active = false }
@@ -117,9 +117,9 @@ export default function App() {
     if (!cleanTitle || busy) return
     setBusy(true); setError('')
     if (supabase && session?.user) {
-      const { data, error: insertError } = await supabase.from('tasks').insert({ title: cleanTitle, description: description.trim(), status, responsible_id: session.user.id, created_by: session.user.id }).select('id,title,description,status,created_at').single()
+      const { data, error: insertError } = await supabase.from('tarea').insert({ titulo: cleanTitle, descripcion: description.trim(), estado: status, responsible_id: session.user.id, created_by: session.user.id }).select('id,titulo,descripcion,estado,created_at').single()
       if (insertError) setError(insertError.message)
-      else if (data) setTasks(current => [{ id: data.id, title: data.title, description: data.description ?? '', status: data.status as TaskStatus, createdAt: data.created_at }, ...current])
+      else if (data) setTasks(current => [{ id: String(data.id), title: data.titulo, description: data.descripcion ?? '', status: data.estado as TaskStatus, createdAt: data.created_at }, ...current])
     } else {
       setTasks(current => [{ id: crypto.randomUUID(), title: cleanTitle, description: description.trim(), status, createdAt: new Date().toISOString() }, ...current])
     }
@@ -129,7 +129,7 @@ export default function App() {
   async function updateStatus(id: string, nextStatus: TaskStatus) {
     setError('')
     if (supabase) {
-      const { error: updateError } = await supabase.from('tasks').update({ status: nextStatus }).eq('id', id)
+      const { error: updateError } = await supabase.from('tarea').update({ estado: nextStatus }).eq('id', id)
       if (updateError) { setError(updateError.message); return }
     }
     setTasks(current => current.map(task => task.id === id ? { ...task, status: nextStatus } : task))
@@ -138,7 +138,7 @@ export default function App() {
   async function deleteTask(id: string) {
     setError('')
     if (supabase) {
-      const { error: deleteError } = await supabase.from('tasks').delete().eq('id', id)
+      const { error: deleteError } = await supabase.from('tarea').delete().eq('id', id)
       if (deleteError) { setError(deleteError.message); return }
     }
     setTasks(current => current.filter(task => task.id !== id))
